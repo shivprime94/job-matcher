@@ -9,13 +9,18 @@ import {
   AlertTitle,
   AlertDescription,
   Box,
+  HStack,
+  Button,
 } from '@chakra-ui/react'
 import SearchForm from '../components/SearchForm'
 import ResultsDisplay from '../components/ResultsDisplay'
 import { useJobSearch } from '../hooks/useJobSearch'
+import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons'
 
 function SearchPage() {
   const [searchTerm, setSearchTerm] = useState('')
+  const [page, setPage] = useState(1)
+  const ITEMS_PER_PAGE = 8
   const toast = useToast()
   const { 
     data: results, 
@@ -23,11 +28,13 @@ function SearchPage() {
     error,
     isError,
     failureCount,
-    refetch 
-  } = useJobSearch(searchTerm)
+    refetch,
+    isPreviousData
+  } = useJobSearch(searchTerm, page, ITEMS_PER_PAGE)
 
   const handleSearch = (technology) => {
     setSearchTerm(technology)
+    setPage(1) // Reset to first page on new search
   }
 
   // Show error toast if the API call fails
@@ -42,6 +49,18 @@ function SearchPage() {
       })
     }
   }, [isError, error, toast])
+
+  const pagination = results?.pagination || { currentPage: 1, totalPages: 0 }
+  
+  const handlePrevPage = () => {
+    setPage(old => Math.max(old - 1, 1))
+  }
+
+  const handleNextPage = () => {
+    if (!isPreviousData && page < pagination.totalPages) {
+      setPage(old => old + 1)
+    }
+  }
 
   return (
     <VStack spacing={8} align="stretch">
@@ -78,8 +97,37 @@ function SearchPage() {
       )}
       
       <ResultsDisplay results={results} isLoading={isLoading} />
+      
+      {/* Pagination Controls */}
+      {results?.jobs?.length > 0 && (
+        <HStack spacing={4} justifyContent="center" py={4}>
+          <Button 
+            onClick={handlePrevPage} 
+            isDisabled={page === 1} 
+            leftIcon={<ChevronLeftIcon />}
+            colorScheme="blue"
+            variant="outline"
+          >
+            Previous
+          </Button>
+          
+          <Text>
+            Page {pagination.currentPage} of {pagination.totalPages}
+          </Text>
+          
+          <Button 
+            onClick={handleNextPage} 
+            isDisabled={isPreviousData || page >= pagination.totalPages}
+            rightIcon={<ChevronRightIcon />}
+            colorScheme="blue"
+            variant="outline"
+          >
+            Next
+          </Button>
+        </HStack>
+      )}
     </VStack>
   )
 }
 
-export default SearchPage 
+export default SearchPage

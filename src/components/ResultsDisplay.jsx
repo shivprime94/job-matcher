@@ -23,8 +23,31 @@ import {
 } from '@chakra-ui/react'
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 import { FaMapMarkerAlt, FaCalendarAlt, FaBriefcase, FaBuilding, FaUsers, FaClock } from 'react-icons/fa'
-import { useState } from 'react'
 import { storage } from '../utils/storage'
+
+
+function formatPostedDate(dateString) {
+  if (!dateString) return 'Date not available';
+  
+  try {
+    const date = new Date(dateString);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid date';
+    }
+    
+    // Format the date using Intl.DateTimeFormat
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date);
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Date error';
+  }
+}
 
 function JobCard({ job }) {
   const { isOpen, onOpen, onClose } = useDisclosure()
@@ -78,9 +101,23 @@ function JobCard({ job }) {
               <Text fontSize={titleSize} fontWeight="bold" color="blue.600" noOfLines={2}>
                 {job.company_name}
               </Text>
-              <Text color="gray.600" fontSize="sm" noOfLines={1}>
+              {/* <Text color="gray.600" fontSize="sm" noOfLines={1}>
                 {job.domain}
-              </Text>
+              </Text> */}
+              <Link
+              href={job.domain}
+              isExternal
+              color="blue.500"
+              fontSize="sm"
+              display="flex"
+              alignItems="center"
+              _hover={{
+                color: 'blue.600',
+                textDecoration: 'none'
+              }}
+            >
+              Company page <ExternalLinkIcon mx={1} />
+            </Link>
             </Box>
           </HStack>
 
@@ -96,7 +133,7 @@ function JobCard({ job }) {
               >
                 {job.job_title}
               </Badge>
-              {(job.is_remote || job.is_hybrid) && (
+              {/* {(job.is_remote || job.is_hybrid) && (
                 <Badge 
                   colorScheme="green" 
                   fontSize="sm"
@@ -104,7 +141,7 @@ function JobCard({ job }) {
                 >
                   {job.is_remote ? 'Remote' : 'Hybrid'}
                 </Badge>
-              )}
+              )} */}
             </HStack>
           </Box>
 
@@ -114,16 +151,16 @@ function JobCard({ job }) {
               <Text noOfLines={1}>{job.location || 'Location not specified'}</Text>
             </HStack>
             <HStack fontSize="sm" color="gray.600" spacing={2}>
-              <Icon as={FaCalendarAlt} boxSize="12px" />
-              <Text>Posted: {new Date(job.posted_date).toLocaleDateString()}</Text>
-            </HStack>
-            {job.employment_type && (
+            <Icon as={FaCalendarAlt} boxSize="12px" />
+            <Text>Posted: {formatPostedDate(job.posted_date)}</Text>
+          </HStack>
+            {/* {job.employment_type && (
               <HStack fontSize="sm" color="gray.600" spacing={2}>
                 <Icon as={FaBriefcase} boxSize="12px" />
                 <Text noOfLines={1}>{job.employment_type}</Text>
               </HStack>
-            )}
-            {job.company_size && (
+            )} */}
+            {/* {job.company_size && (
               <HStack fontSize="sm" color="gray.600" spacing={2}>
                 <Icon as={FaUsers} boxSize="12px" />
                 <Text noOfLines={1}>Company size: {job.company_size}</Text>
@@ -134,19 +171,19 @@ function JobCard({ job }) {
                 <Icon as={FaBuilding} boxSize="12px" />
                 <Text noOfLines={1}>{job.company_industry}</Text>
               </HStack>
-            )}
+            )} */}
           </VStack>
 
-          {job.salary_range && (
+          {/* {job.salary_range && (
             <Text fontSize="sm" color="green.600" fontWeight="semibold" noOfLines={1}>
               {job.salary_range}
             </Text>
-          )}
+          )} */}
 
           <Divider />
 
           <HStack justify="space-between" mt="auto" pt={2}>
-            <Button 
+            {/* <Button 
               size="sm" 
               onClick={onOpen}
               colorScheme="blue"
@@ -156,7 +193,7 @@ function JobCard({ job }) {
               }}
             >
               View Details
-            </Button>
+            </Button> */}
             <Link
               href={job.job_link}
               isExternal
@@ -175,7 +212,7 @@ function JobCard({ job }) {
         </VStack>
       </Box>
 
-      <Modal isOpen={isOpen} onClose={onClose} size="xl" scrollBehavior="inside">
+      {/* <Modal isOpen={isOpen} onClose={onClose} size="xl" scrollBehavior="inside">
         <ModalOverlay />
         <ModalContent mx={4}>
           <ModalHeader>{job.job_title} at {job.company_name}</ModalHeader>
@@ -197,7 +234,7 @@ function JobCard({ job }) {
             <Text whiteSpace="pre-wrap">{job.description}</Text>
           </ModalBody>
         </ModalContent>
-      </Modal>
+      </Modal> */}
     </>
   )
 }
@@ -254,23 +291,8 @@ function ResultsDisplay({ results, isLoading }) {
     return null;
   }
 
-  const isFromCache = storage.get(`search_${results.searchTerm?.toLowerCase()}`);
-
   return (
     <VStack spacing={6} align="stretch" w="100%" px={{ base: 4, md: 0 }}>
-      <HStack spacing={2} color="gray.600" fontSize="sm">
-        <Text>
-          Found {results.metadata.total_results || results.jobs.length} matching jobs
-        </Text>
-        {isFromCache && (
-          <Tooltip label="Results loaded from cache">
-            <HStack spacing={1} color="blue.500">
-              <Icon as={FaClock} />
-              <Text>Cached</Text>
-            </HStack>
-          </Tooltip>
-        )}
-      </HStack>
       <SimpleGrid columns={gridColumns} spacing={{ base: 4, md: 6 }}>
         {results.jobs.map((job) => (
           <JobCard key={job.id} job={job} />

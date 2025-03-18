@@ -3,60 +3,62 @@ import { API_CONFIG } from '../config/constants';
 import { storage } from '../utils/storage';
 
 const api = axios.create({
-  baseURL: API_CONFIG.THEIRSTACK_BASE_URL,
+  baseURL: API_CONFIG.BASE_URL,
   headers: {
-    'Authorization': `Bearer ${API_CONFIG.THEIRSTACK_API_KEY}`,
+    // 'Authorization': `Bearer ${API_CONFIG.THEIRSTACK_API_KEY}`,
     'Content-Type': 'application/json'
   }
 });
 
-export const searchJobsByTechnology = async (technology) => {
-  const skills = technology.split(',').map(skill => skill.trim());
+export const searchJobsByTechnology = async (technology, page = 1, limit = 8) => {
+  // Create a unique cache key that includes pagination params
+  const cacheKey = `${technology}_page${page}_limit${limit}`;
 
-  console.log(storage.get(technology))
-
-  if (storage.get(technology)){
-    return storage.get(technology)
+  if (storage.get(cacheKey)){
+    return storage.get(cacheKey);
   }
+
+  console.log(`Fetching jobs for: ${technology}, page: ${page}, limit: ${limit}`);
   
   try {
-    const response = await api.post('/jobs/search', {
-      page: 0,
-      limit: 1,
-      job_technology_slug_or: skills,
-      posted_at_max_age_days: 5
+    const response = await api.get(`/job/skill/${technology}`, {
+      params: { page, limit }
     });
+    
+    // Check if data exists and has the expected structure
+    if (!response.data || !response.data.data || !Array.isArray(response.data.data)) {
+      return { jobs: [], pagination: { currentPage: page, totalPages: 0, totalItems: 0 } };
+    }
 
-    const results = (response.data.data || []).map(job => ({
+    const data = response.data.data;
+    const pagination = response.data.pagination || { 
+      currentPage: page,
+      totalPages: Math.ceil((data.length || 0) / limit),
+      totalItems: data.length || 0
+    };
+
+    const results = data.map(job => ({
       id: job.id,
-      company_name: job.company_object.name,
-      domain: job.company_object.domain,
-      job_title: job.job_title,
+      company_logo: job.img,
+      job_title: job.title,
+      company_name: job.company,
+      domain: job.companyUrl,
       job_link: job.url,
-      location: job.short_location,
-      posted_date: job.date_posted,
-      company_logo: job.company_object.logo,
-      company_size: job.company_object.employee_count_range,
-      company_industry: job.company_object.industry,
-      is_remote: job.remote,
-      is_hybrid: job.hybrid,
-      salary_range: job.salary_string,
-      matching_phrases: job.matching_phrases,
-      employment_type: job.employment_statuses?.join(', '),
-      description: job.description
+      location: job.location,
+      posted_date: job.postedDate,
     }));
 
     // CACHE THE RESPONSE
-    const formatttedData = {
+    const formattedData = {
       jobs: results,
-      metadata: response.data.metadata
-    }
+      pagination
+    };
 
-    storage.set(technology, formatttedData);
+    storage.set(cacheKey, formattedData);
 
-    return formatttedData;
+    return formattedData;
   } catch (error) {
     console.error('Error fetching jobs:', error);
     throw error;
   }
-}; 
+};
