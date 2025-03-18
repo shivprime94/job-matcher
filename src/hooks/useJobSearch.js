@@ -2,16 +2,16 @@ import { useQuery } from '@tanstack/react-query';
 import { searchJobsByTechnology } from '../services/jobService';
 import { storage } from '../utils/storage';
 
-export const useJobSearch = (technology, page = 1, limit = 8) => {
+export const useJobSearch = (technology, page = 1, limit = 8, fuzzySearch = true) => {
   return useQuery({
-    queryKey: ['jobs', technology, page, limit],
-    queryFn: () => searchJobsByTechnology(technology, page, limit),
+    queryKey: ['jobs', technology, page, limit, fuzzySearch],
+    queryFn: () => searchJobsByTechnology(technology, page, limit, fuzzySearch),
     enabled: Boolean(technology), // Run query when technology is not empty
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
     cacheTime: 30 * 60 * 1000, // Keep data in cache for 30 minutes
     retry: (failureCount, error) => {
       // Don't retry on authentication errors
-      if (error.message.includes('Authentication failed')) {
+      if (error.message?.includes('Authentication failed')) {
         return false;
       }
       // Retry up to 3 times for other errors
@@ -21,5 +21,15 @@ export const useJobSearch = (technology, page = 1, limit = 8) => {
     refetchOnMount: true,
     refetchOnWindowFocus: false,
     keepPreviousData: true // Keep the previous data while fetching the next page
+  });
+};
+
+export const useSuggestions = (query) => {
+  return useQuery({
+    queryKey: ['suggestions', query],
+    queryFn: () => getSkillSuggestions(query),
+    enabled: Boolean(query) && query.length >= 2,
+    staleTime: 5 * 60 * 1000,
+    cacheTime: 30 * 60 * 1000,
   });
 };

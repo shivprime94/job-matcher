@@ -11,6 +11,7 @@ import {
   Box,
   HStack,
   Button,
+  Badge,
 } from '@chakra-ui/react'
 import SearchForm from '../components/SearchForm'
 import ResultsDisplay from '../components/ResultsDisplay'
@@ -20,6 +21,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons'
 function SearchPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(1)
+  const [fuzzySearch, setFuzzySearch] = useState(true)
   const ITEMS_PER_PAGE = 8
   const toast = useToast()
   const { 
@@ -30,7 +32,7 @@ function SearchPage() {
     failureCount,
     refetch,
     isPreviousData
-  } = useJobSearch(searchTerm, page, ITEMS_PER_PAGE)
+  } = useJobSearch(searchTerm, page, ITEMS_PER_PAGE, fuzzySearch)
 
   const handleSearch = (technology) => {
     setSearchTerm(technology)
@@ -65,13 +67,18 @@ function SearchPage() {
   return (
     <VStack spacing={8} align="stretch">
       <VStack spacing={2} align="center">
-        <Heading size="2xl">Job Technology Matcher</Heading>
+        <Heading size="2xl">Search Jobs</Heading>
         <Text color="gray.600" fontSize="lg">
           Find companies using specific technologies in their stack
         </Text>
       </VStack>
       
-      <SearchForm onSearch={handleSearch} isLoading={isLoading} />
+      <SearchForm 
+        onSearch={handleSearch} 
+        isLoading={isLoading} 
+        fuzzySearch={fuzzySearch}
+        setFuzzySearch={setFuzzySearch}
+      />
       
       {isError && failureCount >= 3 && (
         <Alert status="error" borderRadius="md">
@@ -82,6 +89,26 @@ function SearchPage() {
               {error.message.includes('Authentication') 
                 ? 'There was an authentication error. Please check the API configuration.'
                 : 'There was an error fetching the results. Please try again later.'}
+            </AlertDescription>
+          </VStack>
+        </Alert>
+      )}
+
+      {/* Fuzzy match notification */}
+      {results?.fuzzyMatch && (
+        <Alert status="info" borderRadius="md">
+          <AlertIcon />
+          <VStack align="start" spacing={1} width="100%">
+            <AlertTitle>No exact matches found for "{results.fuzzyMatch.searchTerm}"</AlertTitle>
+            <AlertDescription>
+              <Text>Showing results for similar technologies:</Text>
+              <HStack mt={2} flexWrap="wrap" spacing={2}>
+                {results.fuzzyMatch.matchedSkills.map((skill, index) => (
+                  <Badge key={index} colorScheme="blue" fontSize="sm" p={1}>
+                    {skill}
+                  </Badge>
+                ))}
+              </HStack>
             </AlertDescription>
           </VStack>
         </Alert>

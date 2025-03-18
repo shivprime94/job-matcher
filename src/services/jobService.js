@@ -5,24 +5,23 @@ import { storage } from '../utils/storage';
 const api = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   headers: {
-    // 'Authorization': `Bearer ${API_CONFIG.THEIRSTACK_API_KEY}`,
     'Content-Type': 'application/json'
   }
 });
 
-export const searchJobsByTechnology = async (technology, page = 1, limit = 8) => {
-  // Create a unique cache key that includes pagination params
-  const cacheKey = `${technology}_page${page}_limit${limit}`;
+export const searchJobsByTechnology = async (technology, page = 1, limit = 8, fuzzySearch = true) => {
+  // Create a unique cache key that includes pagination params and fuzzy flag
+  const cacheKey = `${technology}_page${page}_limit${limit}_fuzzy${fuzzySearch}`;
 
   if (storage.get(cacheKey)){
     return storage.get(cacheKey);
   }
 
-  console.log(`Fetching jobs for: ${technology}, page: ${page}, limit: ${limit}`);
+  console.log(`Fetching jobs for: ${technology}, page: ${page}, limit: ${limit}, fuzzy: ${fuzzySearch}`);
   
   try {
     const response = await api.get(`/job/skill/${technology}`, {
-      params: { page, limit }
+      params: { page, limit, fuzzy: fuzzySearch }
     });
     
     // Check if data exists and has the expected structure
@@ -51,7 +50,8 @@ export const searchJobsByTechnology = async (technology, page = 1, limit = 8) =>
     // CACHE THE RESPONSE
     const formattedData = {
       jobs: results,
-      pagination
+      pagination,
+      fuzzyMatch: response.data.fuzzyMatch || null
     };
 
     storage.set(cacheKey, formattedData);
@@ -60,5 +60,21 @@ export const searchJobsByTechnology = async (technology, page = 1, limit = 8) =>
   } catch (error) {
     console.error('Error fetching jobs:', error);
     throw error;
+  }
+};
+
+// Get skill suggestions for autocomplete
+export const getSkillSuggestions = async (query) => {
+  if (!query || query.length < 2) return [];
+  
+  try {
+    const response = await api.get('/job/suggestions', {
+      params: { q: query }
+    });
+    
+    return response.data.suggestions || [];
+  } catch (error) {
+    console.error('Error fetching suggestions:', error);
+    return [];
   }
 };
