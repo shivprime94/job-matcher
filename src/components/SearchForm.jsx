@@ -134,9 +134,9 @@ function SearchForm({ onSearch, isLoading, fuzzySearch, setFuzzySearch }) {
               Search
             </Button>
           </HStack>
-          <FormHelperText>
+          {/* <FormHelperText>
             Enter any technology, framework, or programming language
-          </FormHelperText>
+          </FormHelperText> */}
         </FormControl>
 
         <FormControl display="flex" alignItems="center">
